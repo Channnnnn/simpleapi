@@ -20,7 +20,7 @@ exports.getUsers = function(req,res) {
 
 exports.addUser = (req,res) => {
     var salt = hash.genRandomString(16);
-    var pwd_data = hash.sha512("sdsdsd", salt);
+    var pwd_data = hash.sha512(req.body.password, salt);
     User.find({}).sort({id: -1}).limit(1).exec( (err,users) => {
         if (err) throw err;
         if (users && users.length != 0){
@@ -30,7 +30,7 @@ exports.addUser = (req,res) => {
                 age: parseInt(req.body.age),
                 email: req.body.email,
                 salt: pwd_data.salt,
-                passwdhash: pwd_data.passwordHash,
+                hashpassword: pwd_data.passwordHash,
                 admin: req.body.admin ? req.body.admin : false
             });
             newuser.save( function(err,user) {
@@ -38,6 +38,7 @@ exports.addUser = (req,res) => {
                     return res.json({
                         success: false,
                         message: 'Unable to add new user!',
+                        error: err,
                     });
                 } else {
                     return res.json({
@@ -141,7 +142,7 @@ exports.login = (req,res) => {
         }
         else if (user) {
             var passwdData = hash.sha512(req.body.password, user.salt);
-            if (user.passwdhash != passwdData.passwordHash) {
+            if (user.hashpassword != passwdData.passwordHash) {
                 return res.json({
                     success: false,
                     message: 'Authentication failed. Wrong password.' });
