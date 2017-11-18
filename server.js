@@ -35,36 +35,10 @@ app.use(morgan('dev'));
 // basic route
 app.post('/login', function(req,res){
     Users.login(req,res);
-    // var username = req.params.username;
-    // var password = req.params.password;
+});
 
-    // User.login(username, password, function(err,user){
-    //     if (err) throw err;
-        
-    //     if (user && user.length != 0) {
-    //         const payload = {
-    //             id: user.id,
-    //             email: user.email,
-    //             admin: user.admin,
-    //         };
-
-    //         var token = jwt.sign(payload, config.secret, {
-    //             expiresIn: 86400
-    //         });
-
-    //         return res.json({
-    //             success: true,
-    //             message: 'Enjoy your token !',
-    //             token: token
-    //         })
-    //     }
-    //     else {
-    //         return res.json({
-    //             success: false,
-    //             message: 'Authentication failed please try again'
-    //         })
-    //     }
-    // });
+app.post('/users', (req,res) => {
+    Users.addUser(req,res);
 });
 
 // API ROUTES -------------------
@@ -73,23 +47,38 @@ app.get('/', (req,res) => {
     Users.getAllUsers(req,res);
 });
 
-app.get('/user', (req,res) => {
+app.use( (req,res,next) => {
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    if (token) {
+        jwt.verify(token, config.secret, function (err, decoded) {
+            if (err) {
+                return res.json({ success: false, message: 'Invalid token.' });
+            } else {
+                req.decoded = decoded; // add decoded token to request obj.
+                next(); // continue to the sensitive route
+            }
+        });
+    } else {
+        return res.status(403).send({
+            success: false,
+            message: 'No token provided.'
+        });
+    }
+})
+
+app.get('/users', (req,res) => {
     Users.getUsers(req,res);
 });
 
-app.post('/user', (req,res) => {
-    Users.addUser(req,res);
-});
-
-app.get('/user/:id', (req, res) => {
+app.get('/users/:id', (req, res) => {
     Users.getUserById(req,res);
 });
 
-app.put('/user/:id', (req, res) => {
+app.put('/users/:id', (req, res) => {
     Users.updateUserById(req,res);
 });
 
-app.delete('/user/:id', (req, res) => {
+app.delete('/users/:id', (req, res) => {
     Users.removeUserById(req,res);
 });
 
